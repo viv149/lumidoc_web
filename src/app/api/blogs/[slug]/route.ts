@@ -3,6 +3,7 @@ import prisma from "../../../../lib/prisma";
 import { v4 as uuidv4 } from "uuid";
 import { writeFile } from "fs/promises";
 import path from "path";
+import { put } from "@vercel/blob";
 
 type Params = Promise<{ slug: string }>
 
@@ -52,12 +53,20 @@ export async function PATCH(req: NextRequest, { params } : { params: Params}) {
         let imagePath = "";
 
         if (file && file.size > 0) {
-            const buffer = Buffer.from(await file.arrayBuffer());
-            const filename = uuidv4() + "_" + file.name;
-            const filePath = path.join(process.cwd(), "public", "uploads/blog", filename);
+            if (process.env.NODE_ENV === 'production') {
+                const blob = await put(file.name, file, {
+                    access: 'public',
+                });
+                imagePath = blob.url;
+            } else {
+                // Use local filesystem in development
+                const buffer = Buffer.from(await file.arrayBuffer());
+                const filename = uuidv4() + "_" + file.name;
+                const filePath = path.join(process.cwd(), "public", "uploads/blog", filename);
 
-            await writeFile(filePath, buffer);
-            imagePath = "/uploads/blog/" + filename;
+                await writeFile(filePath, buffer);
+                imagePath = "/uploads/blog/" + filename;
+            }
         }
 
         const updatedBlog = await prisma.blog.update({

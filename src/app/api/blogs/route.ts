@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import { writeFile } from "fs/promises";
 import path from "path";
 import prisma from "../../../lib/prisma";
+import { put } from "@vercel/blob";
 
 export async function GET(){
     try {
@@ -42,12 +43,20 @@ export async function POST(req: NextRequest) {
         let imagePath = "";
         
         if (file && file.size > 0) {
-            const buffer = Buffer.from(await file.arrayBuffer());
-            const filename = uuidv4() + "_" + file.name;
-            const filePath = path.join(process.cwd(), "public", "uploads/blog", filename);
-            
-            await writeFile(filePath, buffer);
-            imagePath = "/uploads/blog/" + filename;
+            if (process.env.NODE_ENV === 'production') {
+                // Use cloud storage in production
+                const blob = await put(file.name, file, {
+                    access: 'public',
+                });
+                imagePath = blob.url;
+            } else {
+                // Use local filesystem in development
+                const buffer = Buffer.from(await file.arrayBuffer());
+                const filename = uuidv4() + "_" + file.name;
+                const filePath = path.join(process.cwd(), "public", "uploads/blog", filename);
+                await writeFile(filePath, buffer);
+                imagePath = "/uploads/blog/" + filename;
+            }
         }
         const createBlog = await prisma.blog.create({
             data: {
