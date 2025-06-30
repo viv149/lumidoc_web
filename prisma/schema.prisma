@@ -1,0 +1,98 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         String   @id @default(uuid())
+  name       String
+  email      String   @unique
+  password   String
+  role       Role     @default(USER)
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+}
+
+model Blog {
+  id             String   @id @default(uuid())
+  title          String
+  slug           String?  @unique
+  image          String
+  content        String
+  description    String?
+  seoTitle       String?
+  seoDescription String?
+  created_at     DateTime @default(now())
+  updated_at     DateTime @default(now())
+}
+
+model Category {
+  id         String    @id @default(uuid())
+  name       String
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  products   Product[]
+}
+
+model Product {
+  id             String           @id @default(uuid())
+  categoryId     String
+  name           String
+  slug           String           @unique
+  model          String
+  price          Int
+  smallDesc      String
+  description    String?
+  features       String?
+  specifications String?
+  seoTitle       String?
+  seoDescription String?
+  image          String
+  created_at     DateTime         @default(now())
+  updated_at     DateTime         @default(now())
+  category       Category         @relation(fields: [categoryId], references: [id])
+  enquiries      ProductEnquiry[]
+}
+
+model WebsiteSettings {
+  id          String   @id @default(uuid())
+  logo        String?
+  name        String?
+  socialLinks String?
+  whatsapp    String?
+  address     String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @default(now())
+}
+
+model ProductEnquiry {
+  id         String   @id @default(uuid())
+  productId  String
+  model      String
+  name       String
+  email      String
+  message    String
+  contact    String
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+  product    Product  @relation(fields: [productId], references: [id])
+}
+
+model ContactMessage {
+  id         String   @id @default(uuid())
+  name       String
+  email      String
+  phone      String
+  message    String
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+}
+
+enum Role {
+  USER
+  ADMIN
+}
